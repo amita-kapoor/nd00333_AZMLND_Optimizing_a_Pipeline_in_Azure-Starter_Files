@@ -9,18 +9,20 @@ from sklearn.preprocessing import OneHotEncoder
 import pandas as pd
 from azureml.core.run import Run
 from azureml.data.dataset_factory import TabularDatasetFactory
+import logging
 
 # TODO: Create TabularDataset using TabularDatasetFactory
 # Data is located at:
-# "https://automlsamplenotebookdata.blob.core.windows.net/automl-sample-notebook-data/bankmarketing_train.csv"
+url = "https://automlsamplenotebookdata.blob.core.windows.net/automl-sample-notebook-data/bankmarketing_train.csv"
 
-ds = ### YOUR CODE HERE ###
+ds = TabularDatasetFactory.from_delimited_files(url)  ### YOUR CODE HERE ###
 
-x, y = clean_data(ds)
+#x, y = clean_data(ds)
 
 # TODO: Split data into train and test sets.
 
-### YOUR CODE HERE ###a
+### YOUR CODE HERE ###
+#x_train, x_test, y_train, y_test = train_test_split(x, y)
 
 run = Run.get_context()
 
@@ -49,24 +51,50 @@ def clean_data(data):
     x_df["poutcome"] = x_df.poutcome.apply(lambda s: 1 if s == "success" else 0)
 
     y_df = x_df.pop("y").apply(lambda s: 1 if s == "yes" else 0)
+    #print(f'testing {len(x_df}')
+    return x_df, y_df
     
+## Moved remove red_line
+x, y = clean_data(ds)
+# TODO: Split data into train and test sets.
+
+### YOUR CODE HERE ###
+x_train, x_test, y_train, y_test = train_test_split(x, y, random_state=0)
 
 def main():
     # Add arguments to script
+    logger = logging.getLogger(__name__)
+    hdlr = logging.FileHandler('python.log')
+    logger.addHandler(hdlr)
+    logger.setLevel(logging.DEBUG)
+
+    logger.info("entered main")
+    
+
+    
+
+    #run = Run.get_context()
+    #run.log("accuracy", float(val_accuracy))
+    #print("test", len(x_train))
+
+        
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--C', type=float, default=1.0, help="Inverse of regularization strength. Smaller values cause stronger regularization")
-    parser.add_argument('--max_iter', type=int, default=100, help="Maximum number of iterations to converge")
+    parser.add_argument('--C', type=float, default=0.5, help="Inverse of regularization strength. Smaller values cause stronger regularization")
+    parser.add_argument('--max_iter', type=int, default=1000, help="Maximum number of iterations to converge")
 
     args = parser.parse_args()
 
     run.log("Regularization Strength:", np.float(args.C))
     run.log("Max iterations:", np.int(args.max_iter))
+    logger.info(f"running for {args.C} and {args.max_iter}")
 
     model = LogisticRegression(C=args.C, max_iter=args.max_iter).fit(x_train, y_train)
 
     accuracy = model.score(x_test, y_test)
+    logger.info("Calculated accuracy")
     run.log("Accuracy", np.float(accuracy))
 
 if __name__ == '__main__':
+
     main()
